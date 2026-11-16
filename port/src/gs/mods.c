@@ -319,8 +319,9 @@ static volatile unsigned sImgGen = 1;
 
 int Mods_HudHidden(void) { return sHide; }
 /* bt3.look: built during a blank's scripts like the shapes, the last blank's kept for the renderer (game's thread) */
-static const ModsLook kLookNone = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu};
-static ModsLook sLookBuild = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu}, sLook = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu};
+static const ModsLook kLookNone = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu, 0, 0, 0, 0, 0, 0, 0, 0};
+static ModsLook sLookBuild = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu, 0, 0, 0, 0, 0, 0, 0, 0},
+                sLook = {0, 0, 0, 0, 0, 0, 0xFFECD6FFu, 0, 0, 0, 0, 0, 0, 0, 0};
 const ModsLook *Mods_Look(void) { return &sLook; }
 unsigned Mods_ImageGen(void) { return sImgGen; }
 
@@ -777,13 +778,17 @@ static int l_hud_hide_game(lua_State *L) {
    switched off or stopped leaves the picture as the game draws it. Fields left out are not changed; with several
    mods each one is the strongest asked for. Only the picture changes, never the fight. */
 static int l_look(lua_State *L) {
-    static const char *const keys[] = {"shading", "rim", "vivid", "ambient", "energy", "energy_light"};
+    static const char *const keys[] = {"shading", "rim", "vivid", "ambient", "energy", "energy_light",
+                                       "bloom", "bloom_threshold", "tonemap", "sharpen", "dof", "vignette",
+                                       "grain", "ca"};
     int *const out[] = {&sLookBuild.shading, &sLookBuild.rim, &sLookBuild.vivid, &sLookBuild.ambient,
-                        &sLookBuild.energy, &sLookBuild.energy_light};
+                        &sLookBuild.energy, &sLookBuild.energy_light, &sLookBuild.bloom,
+                        &sLookBuild.bloom_threshold, &sLookBuild.tonemap, &sLookBuild.sharpen,
+                        &sLookBuild.dof, &sLookBuild.vignette, &sLookBuild.grain, &sLookBuild.ca};
     int k;
 
     luaL_checktype(L, 1, LUA_TTABLE);
-    for (k = 0; k < 6; k++) {
+    for (k = 0; k < 14; k++) {
         lua_getfield(L, 1, keys[k]);
         if (!lua_isnil(L, -1)) {
             lua_Number v = luaL_checknumber(L, -1);

@@ -119,6 +119,15 @@ int Mods_HudHidden(void);                     /* any thread: the game's HUD piec
 typedef struct ModsLook {
     int shading, rim, vivid, ambient, energy, energy_light;
     unsigned rim_color;
+    /* the post-process added on the same pass (grade.frag), 0..100 each, 0 = off */
+    int bloom;            /* the bright parts of the picture glowing, at several sizes (its mipmaps) */
+    int bloom_threshold;  /* how bright a part has to be to glow (higher: only the brightest) */
+    int tonemap;          /* filmic tonemap: highlights roll off instead of clipping */
+    int sharpen;          /* unsharp mask: the picture's edges a little clearer */
+    int dof;              /* depth of field: the far stage softly blurred */
+    int vignette;         /* the corners a little darker */
+    int grain;            /* film grain */
+    int ca;               /* chromatic aberration at the edges */
 } ModsLook;
 const ModsLook *Mods_Look(void);
 

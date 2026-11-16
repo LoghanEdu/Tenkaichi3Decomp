@@ -2325,7 +2325,9 @@ static void grade_add(void) {
     float k = lk->vivid / 100.0f;
     int ls;
 
-    if ((lk->vivid <= 0 && lk->ambient <= 0 && lk->energy_light <= 0) || sBackend != &sVulkanBackend ||
+    if ((lk->vivid <= 0 && lk->ambient <= 0 && lk->energy_light <= 0 && lk->bloom <= 0 && lk->tonemap <= 0 &&
+         lk->sharpen <= 0 && lk->dof <= 0 && lk->vignette <= 0 && lk->grain <= 0 && lk->ca <= 0) ||
+        sBackend != &sVulkanBackend ||
         sGradeFrame == gGsFrame || gsDrawCount >= MAX_DRAWS || gGsMainFbp < 0) {
         return;
     }
@@ -2353,6 +2355,14 @@ static void grade_add(void) {
     g.rect[3] = (float)Port_PageAspectMilli() / 1000.0f * 448.0f / 512.0f; /* a GS pixel's width over its height */
     g.mode[0] = lk->vivid / 2;  /* the balance: half of the scene's colour cast out, with the vivid colours */
     g.mode[1] = lk->energy_light;
+    g.post[0] = lk->bloom / 100.0f;                                  /* (grade.frag: bloom strength) */
+    g.post[1] = 0.30f + 0.60f * (lk->bloom_threshold / 100.0f);      /* (what glows: 0.30 .. 0.90 of a white) */
+    g.post[2] = lk->ca / 100.0f;
+    g.post[3] = lk->sharpen / 100.0f;
+    g.post[4] = lk->tonemap / 100.0f;
+    g.post[5] = lk->dof / 100.0f;
+    g.post[6] = lk->vignette / 100.0f;
+    g.post[7] = lk->grain / 100.0f;
     ls = sLightSet++ % GS_LIGHT_SETS; /* the frame's lights, as a set of their own for the pass */
     gsGradeLightCount[ls] = sLightFrame == gGsFrame ? sLightCount : 0;
     memcpy(gsGradeLights[ls], sLights, sizeof(sLights));

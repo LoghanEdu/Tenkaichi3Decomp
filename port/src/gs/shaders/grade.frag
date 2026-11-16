@@ -22,6 +22,9 @@ layout(set = 3, binding = 0) uniform Params {
     vec4 o; // x: ambient shadow strength 0..1, y: its radius in uv across, z: the same down, w: debug (1 shadow, 2 depth)
     vec4 q; // x: the depth buffer's maximum / 65536, y: balance strength, z: energy light strength, w: number of lights
     vec4 L[32]; // per light: (x, y, reach, depth) in GS pixels and the game's depth / 65536, then (r, g, b, strength)
+    vec4 u; // x: bloom strength 0..1, y: its threshold, z: chromatic aberration, w: sharpen
+    vec4 v; // x: tonemap, y: depth of field, z: vignette, w: grain
+    vec4 w; // x: time in seconds (for the grain); the rest unused
 } p;
 
 const vec3 kLum = vec3(0.2126, 0.7152, 0.0722);
@@ -124,6 +127,55 @@ void main() {
         float L = clamp(dot(c, kLum), 0.0, 1.0);
         c += p.h.xyz * (1.0 - L) * (1.0 - L) * 0.08;              // the shadows a touch cool
         c = mix(a, clamp(c, 0.0, 1.0), p.g.w);
+    }
+    // ---- The post-process a script mod asks for (bt3.look bloom / tonemap / sharpen / dof / vignette / grain / ca):
+    //      one more pass's worth of work in this same pass, after the colours above. Each is 0 when off.
+    if (p.u.z > 0.0) { // chromatic aberration: the red and blue channels a hair apart, more toward the edges
+        vec2 dir = vUv - 0.5;
+        float amt = p.u.z * 0.0088 * dot(dir, dir);
+        c.r = textureLod(src, vUv + dir * amt, 0.0).r;
+        c.b = textureLod(src, vUv - dir * amt, 0.0).b;
+    }
+    if (p.u.x > 0.0) { // bloom: the picture's bright parts at several sizes, from its own mipmaps
+        vec3 bloom = vec3(0.0);
+        float total = 0.0;
+        for (int i = 2; i <= 5; i++) {
+            vec3 s = textureLod(src, vUv, float(i)).rgb;
+            float k = smoothstep(p.u.y, p.u.y + 0.30, dot(s, kLum)); // (only what is bright glows)
+            float weight = 1.0 / float(i - 1);                        // (the big blurs weigh less)
+            bloom += s * k * weight;
+            total += weight;
+        }
+        bloom /= max(total, 1e-4);
+        c += bloom * p.u.x * 0.60;
+    }
+    if (p.u.w > 0.0) { // sharpen: an unsharp mask, for the upscaled picture's edges
+        vec2 texel = 1.0 / vec2(textureSize(src, 0));
+        vec3 blur = (textureLod(src, vUv + vec2(texel.x, 0.0), 0.0).rgb +
+                     textureLod(src, vUv - vec2(texel.x, 0.0), 0.0).rgb +
+                     textureLod(src, vUv + vec2(0.0, texel.y), 0.0).rgb +
+                     textureLod(src, vUv - vec2(0.0, texel.y), 0.0).rgb) * 0.25;
+        c += (c - blur) * p.u.w * 0.80;
+    }
+    if (p.v.y > 0.0) { // depth of field: the far stage softened (the fighters at the front stay sharp)
+        float there = far_of(vUv);
+        float coc = smoothstep(0.60, 0.95, there) * p.v.y;
+        vec3 soft = textureLod(src, vUv, 3.0).rgb;
+        c = mix(c, soft, coc * 0.75);
+    }
+    if (p.v.x > 0.0) { // filmic tonemap (ACES fit): the highlights roll off instead of clipping
+        vec3 t = max(c, vec3(0.0));
+        t = (t * (2.51 * t + 0.03)) / (t * (2.43 * t + 0.59) + 0.14);
+        c = mix(c, clamp(t, 0.0, 1.0), p.v.x * 0.60);
+    }
+    if (p.v.z > 0.0) { // vignette: the corners darker, the picture's middle kept
+        vec2 d = vUv - 0.5;
+        float vig = smoothstep(0.95, 0.30, length(d) * 1.35);
+        c *= mix(1.0, vig, p.v.z);
+    }
+    if (p.v.w > 0.0) { // film grain, animated by the time
+        float n = fract(sin(dot(vUv * vec2(1920.0, 1080.0) + p.w.x * 37.0, vec2(12.9898, 78.233))) * 43758.5453);
+        c += (n - 0.5) * p.v.w * 0.10;
     }
     outColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }

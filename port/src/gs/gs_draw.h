@@ -96,6 +96,9 @@ typedef struct GsDraw {
     float blendc;
     int scissor[4]; /* x, y, width, height, at SCALE */
     int wall;       /* triangles of the wall at the edge of the map (gs_draw.c, Port_WallMesh): in-between pictures draw it anew */
+    float post[12]; /* native effect 6: the post-process the look pass adds after the colours (grade.frag), from the
+                       script mods' bt3.look: bloom strength, its threshold, chromatic aberration, sharpen, tonemap,
+                       depth of field, vignette, grain, time, then unused */
 } GsDraw;
 
 /* The formats a texture pack's replacement can be in (matches gs_texpack.h's TexPackImage.format). */

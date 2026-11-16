@@ -189,6 +189,13 @@ steps. Up to 24 settings, 8 choices each.
 | `ambient` | soft shadows in creases and where things meet the ground, from the depth buffer |
 | `energy` | what adds light (ki blasts, beams, sparks, flashes) drawn stronger and more saturated |
 | `energy_light` | that light tinting the ground, rocks and fighters round it |
+| `bloom`, `bloom_threshold` | the bright parts of the picture glowing, at several sizes (its mipmaps); the threshold says how bright a part must be (higher: only the brightest) |
+| `tonemap` | filmic tonemap: highlights roll off instead of clipping |
+| `sharpen` | unsharp mask: the upscaled picture's edges a little clearer |
+| `dof` | depth of field: the far stage softly blurred, the fighters kept sharp |
+| `vignette` | the corners a little darker (drawn before the HUD, so the gauges keep their colours) |
+| `grain` | film grain, animated |
+| `ca` | chromatic aberration at the edges |
 
 `vivid`, `ambient` and `energy_light` are one pass over the fight's picture just before its HUD, so the HUD and the
 menus keep their colours. Only the GPU renderer draws it (F1 > Video, not OpenGL); the others are drawn by every

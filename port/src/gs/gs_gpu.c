@@ -1474,7 +1474,7 @@ static void vk_frame_end(void) {
                     SDL_GPUTextureLocation from, to;
                     SDL_GPUColorTargetInfo ft;
                     SDL_GPUTextureSamplerBinding fs[3];
-                    float params[16 + GS_LIGHTS * 8];
+                    float params[16 + GS_LIGHTS * 8 + 12];
                     SDL_zero(from);
                     SDL_zero(to);
                     from.texture = sTgCol[d->target];
@@ -1535,6 +1535,11 @@ static void vk_frame_end(void) {
                             o[0] = l->x; o[1] = l->y; o[2] = l->rad; o[3] = l->z;
                             o[4] = l->r; o[5] = l->g; o[6] = l->b; o[7] = l->w;
                         }
+                    }
+                    {   /* the post-process drawn after the colours (grade.frag): from the script mods' bt3.look */
+                        float *x = params + 16 + GS_LIGHTS * 8;
+                        memcpy(x, d->post, sizeof(d->post));
+                        x[8] = (float)SDL_GetTicks() / 1000.0f; /* (the grain's animation) */
                     }
                     SDL_PushGPUFragmentUniformData(cmd, 0, params, sizeof(params));
                     SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
